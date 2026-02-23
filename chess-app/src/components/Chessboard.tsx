@@ -141,7 +141,7 @@ export const Chessboard: React.FC<ChessboardProps> = ({ game, onMakeMove, soundE
     return (
         <div style={{
             width: '100%',
-            maxWidth: '600px',
+            maxWidth: '800px',
             aspectRatio: '1/1',
             display: 'grid',
             gridTemplateColumns: 'repeat(8, 1fr)',

@@ -80,7 +80,7 @@ function App() {
             onInvalidMove={handleInvalidMove}
             showHints={mode === 'beginner'}
           />
-          <div style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', maxWidth: '600px', fontSize: '0.9rem' }}>
+          <div style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', maxWidth: '800px', fontSize: '0.9rem' }}>
             <div style={{ display: 'flex', gap: '1rem' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <div style={{ width: 12, height: 12, backgroundColor: 'white', borderRadius: 2 }} /> White (You)
