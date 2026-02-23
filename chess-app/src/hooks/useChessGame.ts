@@ -17,19 +17,7 @@ export const safeClone = (game: Chess) => {
                 if (p) clone.put(p, sq);
             }
         }
-        if (game.turn() === 'b') {
-            const startSq = 'a7' as Square;
-            const endSq = 'a6' as Square;
-            const origStart = clone.get(startSq);
-            const origEnd = clone.get(endSq);
-            clone.put({ type: 'p', color: 'b' }, startSq);
-            clone.remove(endSq);
-            clone.move(endSq);
-            clone.remove(endSq);
-            if (origStart) clone.put(origStart, startSq);
-            else clone.remove(startSq);
-            if (origEnd) clone.put(origEnd, endSq);
-        }
+        safeChangeTurn(clone, game.turn());
         return clone;
     }
 };
@@ -42,17 +30,41 @@ export const safeChangeTurn = (game: Chess, newTurn: 'w' | 'b') => {
         tokens[3] = '-';
         game.load(tokens.join(' '));
     } catch (e) {
-        const startSq = newTurn === 'b' ? 'a2' : 'a7';
-        const endSq = newTurn === 'b' ? 'a3' : 'a6';
+        // Fallback: move a piece of the CURRENT turn to reach the NEW turn.
+        const currentTurn = game.turn();
+
+        // Remove all kings temporarily to avoid check constraints during the dummy move
+        const kings: { sq: Square, p: { type: string, color: string } }[] = [];
+        const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+        for (let f of files) {
+            for (let r = 1; r <= 8; r++) {
+                const sq = `${f}${r}` as Square;
+                const p = game.get(sq);
+                if (p && p.type === 'k') {
+                    kings.push({ sq, p: { ...p } });
+                    game.remove(sq);
+                }
+            }
+        }
+
+        const startSq = currentTurn === 'w' ? 'a2' : 'a7';
+        const endSq = currentTurn === 'w' ? 'a3' : 'a6';
         const origStart = game.get(startSq as Square);
         const origEnd = game.get(endSq as Square);
-        game.put({ type: 'p', color: game.turn() }, startSq as Square);
+
+        game.put({ type: 'p', color: currentTurn }, startSq as Square);
         game.remove(endSq as Square);
-        game.move(endSq);
+        try {
+            game.move(endSq);
+        } catch (err) { }
         game.remove(endSq as Square);
+
         if (origStart) game.put(origStart, startSq as Square);
         else game.remove(startSq as Square);
         if (origEnd) game.put(origEnd, endSq as Square);
+
+        // Restore kings
+        kings.forEach(k => game.put(k.p as any, k.sq));
     }
 };
 
@@ -305,8 +317,9 @@ export function useChessGame() {
                     return false;
                 }
 
-                // Extra check removal if we are in expert mode and the FEN is wacky
-                if (mode === 'expert') {
+                // Extra check removal if we are in expert mode or learning a specific role
+                // This ensures movement stays fluid even in legally "wacky" board states.
+                if (mode === 'expert' || learningRole) {
                     // Try to move normally. If it fails, force the move since it's just practicing movement.
                     let move = null;
                     try {
