@@ -95,10 +95,17 @@ export const Chessboard: React.FC<ChessboardProps> = ({ game, onMakeMove, soundE
                 }
             } else {
                 // Did we click another piece? Let's just select it instead of showing error,
-                // treating it as changing selection.
+                // treating it as changing selection (if it's our turn piece).
                 if (piece) {
-                    setSelectedSquare(square);
-                    setValidMoves(getPseudoLegalMoves(game, square));
+                    if (piece.color === game.turn()) {
+                        setSelectedSquare(square);
+                        setValidMoves(getPseudoLegalMoves(game, square));
+                    } else {
+                        // Selection of opponent piece is not allowed for moving
+                        onInvalidMove();
+                        setSelectedSquare(null);
+                        setValidMoves([]);
+                    }
                 } else {
                     // Invalid move area clicked
                     onInvalidMove();
@@ -110,8 +117,12 @@ export const Chessboard: React.FC<ChessboardProps> = ({ game, onMakeMove, soundE
             return;
         }
 
-        // Otherwise, select the piece if it exists
+        // Otherwise, select the piece if it exists and it is its turn
         if (piece) {
+            if (piece.color !== game.turn()) {
+                onInvalidMove();
+                return;
+            }
             setSelectedSquare(square);
             setValidMoves(getPseudoLegalMoves(game, square));
         }
