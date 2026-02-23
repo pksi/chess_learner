@@ -6,7 +6,7 @@ interface ChessboardProps {
     game: Chess;
     onMakeMove: (source: Square, target: Square) => boolean;
     soundEnabled: boolean;
-    onInvalidMove: () => void;
+    onInvalidMove: (message?: string) => void;
     showHints?: boolean;
 }
 
@@ -102,7 +102,7 @@ export const Chessboard: React.FC<ChessboardProps> = ({ game, onMakeMove, soundE
                         setValidMoves(getPseudoLegalMoves(game, square));
                     } else {
                         // Selection of opponent piece is not allowed for moving
-                        onInvalidMove();
+                        onInvalidMove(`It's ${game.turn() === 'w' ? "white" : "black"}'s turn, please wait for your turn.`);
                         setSelectedSquare(null);
                         setValidMoves([]);
                     }
@@ -120,7 +120,7 @@ export const Chessboard: React.FC<ChessboardProps> = ({ game, onMakeMove, soundE
         // Otherwise, select the piece if it exists and it is its turn
         if (piece) {
             if (piece.color !== game.turn()) {
-                onInvalidMove();
+                onInvalidMove(`It's ${game.turn() === 'w' ? "white" : "black"}'s turn, please wait for your turn.`);
                 return;
             }
             setSelectedSquare(square);

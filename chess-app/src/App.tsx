@@ -20,8 +20,8 @@ function App() {
     return `Hello! I'm your chess tutor. You can <strong>Play</strong> a full game or check the <strong>Learn</strong> section to practice specific pieces like the Pawn.`;
   };
 
-  const handleInvalidMove = () => {
-    setWarningMessage("Invalid move! Remember the rules for this piece.");
+  const handleInvalidMove = (message?: string) => {
+    setWarningMessage(message || "Invalid move! Remember the rules for this piece.");
     setTimeout(() => {
       setWarningMessage(null);
     }, 3000);
