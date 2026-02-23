@@ -1,0 +1,5 @@
+{
+  "name": "Grandmaster Guide",
+  "description": "An interactive chess tutor powered by Gemini. Play against an AI that adapts to your skill level (Beginner, Intermediate, Expert) and explains every move to help you improve.",
+  "requestFramePermissions": []
+}
