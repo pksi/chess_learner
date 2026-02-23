@@ -60,36 +60,34 @@ export const getPseudoLegalMoves = (game: Chess, square: Square) => {
     const piece = game.get(square);
     if (!piece) return [];
 
-    const g = new Chess();
-    g.clear();
+    // Clone the game to calculate moves safely
+    const g = safeClone(game);
 
-    const allPieces: { p: any, sq: Square }[] = [];
+    // Ensure it's the piece's turn to get its moves
+    if (g.turn() !== piece.color) {
+        safeChangeTurn(g, piece.color);
+    }
+
+    // To allow pieces to move even if their king is in check 
+    // (pseudo-legal learning), we temporarily replace ANY OTHER king on the board
+    // with a pawn to ignore check constraints during move generation.
     const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
     for (let f of files) {
         for (let r = 1; r <= 8; r++) {
             const sq = `${f}${r}` as Square;
-            const p = game.get(sq);
-            if (p) allPieces.push({ p, sq });
+            const p = g.get(sq);
+            if (p && p.type === 'k' && sq !== square) {
+                g.remove(sq);
+                g.put({ type: 'p', color: p.color }, sq);
+            }
         }
     }
 
-    if (piece.type !== 'k') {
-        allPieces.forEach(x => {
-            if (x.p.type === 'k') {
-                g.put({ type: 'p', color: x.p.color }, x.sq);
-            } else {
-                g.put(x.p, x.sq);
-            }
-        });
-        safeChangeTurn(g, piece.color);
-        return g.moves({ square, verbose: true }).map(m => m.to as Square);
-    } else {
-        g.put(piece, square);
-        allPieces.filter(x => x.p.color === piece.color && x.sq !== square).forEach(x => {
-            g.put(x.p, x.sq);
-        });
-        safeChangeTurn(g, piece.color);
-        return g.moves({ square, verbose: true }).map(m => m.to as Square);
+    try {
+        const moves = g.moves({ square, verbose: true });
+        return moves.map(m => m.to as Square);
+    } catch (e) {
+        return [];
     }
 };
 
@@ -301,10 +299,10 @@ export function useChessGame() {
             const gameCopy = safeClone(game);
             const piece = gameCopy.get(source);
 
-            // Turn overriding for expert mode and free learning mode
+            // Enforce alternating turns
             if (piece) {
                 if (gameCopy.turn() !== piece.color) {
-                    safeChangeTurn(gameCopy, piece.color);
+                    return false;
                 }
 
                 // Extra check removal if we are in expert mode and the FEN is wacky
@@ -319,6 +317,8 @@ export function useChessGame() {
                         // Pseudo-legal bypass
                         gameCopy.remove(source);
                         gameCopy.put(piece, target);
+                        // Manually flip turn for pseudo moves
+                        safeChangeTurn(gameCopy, piece.color === 'w' ? 'b' : 'w');
                         setGame(gameCopy);
                         return true;
                     } else {
