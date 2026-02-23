@@ -14,8 +14,18 @@ const ranks = [8, 7, 6, 5, 4, 3, 2, 1];
 const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
 
 const pieceMap: Record<string, string> = {
-    'pw': '♟', 'nw': '♞', 'bw': '♝', 'rw': '♜', 'qw': '♛', 'kw': '♚',
-    'pb': '♟', 'nb': '♞', 'bb': '♝', 'rb': '♜', 'qb': '♛', 'kb': '♚'
+    'pw': 'https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett/wP.svg',
+    'nw': 'https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett/wN.svg',
+    'bw': 'https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett/wB.svg',
+    'rw': 'https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett/wR.svg',
+    'qw': 'https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett/wQ.svg',
+    'kw': 'https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett/wK.svg',
+    'pb': 'https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett/bP.svg',
+    'nb': 'https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett/bN.svg',
+    'bb': 'https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett/bB.svg',
+    'rb': 'https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett/bR.svg',
+    'qb': 'https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett/bQ.svg',
+    'kb': 'https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett/bK.svg'
 };
 
 const playSound = () => {
@@ -157,23 +167,6 @@ export const Chessboard: React.FC<ChessboardProps> = ({ game, onMakeMove, soundE
                         bgColor = 'var(--board-valid-move)';
                     }
 
-                    let colorStyles = {};
-                    if (piece) {
-                        if (piece.color === 'w') {
-                            colorStyles = {
-                                color: 'white',
-                                textShadow: '0 2px 4px rgba(0,0,0,0.4)',
-                                fontSize: '3rem'
-                            };
-                        } else {
-                            colorStyles = {
-                                color: 'black',
-                                textShadow: '0 2px 4px rgba(0,0,0,0.4)',
-                                fontSize: '3rem'
-                            };
-                        }
-                    }
-
                     return (
                         <div
                             key={square}
@@ -187,10 +180,20 @@ export const Chessboard: React.FC<ChessboardProps> = ({ game, onMakeMove, soundE
                                 cursor: 'pointer',
                                 userSelect: 'none',
                                 transition: 'background-color 0.2s',
-                                ...colorStyles
                             }}
                         >
-                            {piece && pieceMap[`${piece.type}${piece.color}`]}
+                            {piece && (
+                                <img
+                                    src={pieceMap[`${piece.type}${piece.color}`]}
+                                    alt={`${piece.color} ${piece.type}`}
+                                    style={{
+                                        width: '85%',
+                                        height: '85%',
+                                        userSelect: 'none',
+                                        pointerEvents: 'none'
+                                    }}
+                                />
+                            )}
 
                             {/* Valid move indicator if empty space */}
                             {showHintUI && !piece && (
