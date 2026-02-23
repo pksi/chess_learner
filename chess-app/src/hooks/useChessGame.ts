@@ -18,7 +18,6 @@ export const safeClone = (game: Chess) => {
             }
         }
         safeChangeTurn(clone, game.turn());
-        console.log("safeClone fallback triggered. Target turn:", game.turn(), "Result turn:", clone.turn());
         return clone;
     }
 };
@@ -66,7 +65,6 @@ export const safeChangeTurn = (game: Chess, newTurn: 'w' | 'b') => {
 
         // Restore kings
         kings.forEach(k => game.put(k.p as any, k.sq));
-        console.log("safeChangeTurn fallback finished. New turn:", game.turn());
     }
 };
 
@@ -99,10 +97,8 @@ export const getPseudoLegalMoves = (game: Chess, square: Square) => {
 
     try {
         const moves = g.moves({ square, verbose: true });
-        console.log("getPseudoLegalMoves for", square, "at turn", g.turn(), "returns", moves.length, "moves");
         return moves.map(m => m.to as Square);
     } catch (e: any) {
-        console.error("getPseudoLegalMoves failed:", e.message);
         return [];
     }
 };
