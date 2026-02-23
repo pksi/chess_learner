@@ -21,6 +21,7 @@ function App() {
   };
 
   const handleInvalidMove = (message?: string) => {
+    console.log("handleInvalidMove called with:", message);
     setWarningMessage(message || "Invalid move! Remember the rules for this piece.");
     setTimeout(() => {
       setWarningMessage(null);
