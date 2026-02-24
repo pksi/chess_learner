@@ -103,6 +103,31 @@ export const getPseudoLegalMoves = (game: Chess, square: Square) => {
     }
 };
 
+const loadFENIntoGame = (game: Chess, fen: string) => {
+    try {
+        game.load(fen);
+    } catch (e) {
+        game.clear();
+        const [pieces, turn] = fen.split(' ');
+        const rows = pieces.split('/');
+        for (let r = 0; r < 8; r++) {
+            let fileIdx = 0;
+            for (const char of rows[r]) {
+                if (/\d/.test(char)) {
+                    fileIdx += parseInt(char);
+                } else {
+                    const color = char === char.toUpperCase() ? 'w' : 'b';
+                    const type = char.toLowerCase();
+                    const sq = `${String.fromCharCode(97 + fileIdx)}${8 - r}` as Square;
+                    game.put({ type: type as any, color }, sq);
+                    fileIdx++;
+                }
+            }
+        }
+        safeChangeTurn(game, turn as 'w' | 'b');
+    }
+};
+
 export function useChessGame() {
     const [game, setGame] = useState(new Chess());
     const [mode, setModeState] = useState<GameMode>('beginner');
@@ -232,6 +257,7 @@ export function useChessGame() {
                 }
             }
             setGame(newGame);
+            setHistory([]);
         } else if (learningRole) {
             const newGame = new Chess();
             newGame.clear();
@@ -266,6 +292,7 @@ export function useChessGame() {
                 }
             }
             setGame(newGame);
+            setHistory([]);
         } else if (mode === 'expert') {
             const newGame = new Chess();
             newGame.clear();
@@ -314,15 +341,7 @@ export function useChessGame() {
         if (!lastFen) return;
 
         const newGame = new Chess();
-        try {
-            newGame.load(lastFen);
-        } catch (e) {
-            // Manual reconstruction if FEN load fails for custom board states
-            newGame.clear();
-            const temp = new Chess();
-            temp.load(lastFen);
-            // This is just to be safe, though Fen load usually works.
-        }
+        loadFENIntoGame(newGame, lastFen);
 
         setHistory(prevHistory);
         setGame(newGame);
@@ -380,7 +399,7 @@ export function useChessGame() {
             return false;
         }
         return false;
-    }, [game, mode]);
+    }, [game, mode, learningRole]);
 
     return {
         game,
