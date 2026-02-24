@@ -107,6 +107,7 @@ export function useChessGame() {
     const [game, setGame] = useState(new Chess());
     const [mode, setModeState] = useState<GameMode>('beginner');
     const [learningRole, setLearningRole] = useState<string | null>(null);
+    const [history, setHistory] = useState<string[]>([]);
 
     const setMode = useCallback((newMode: GameMode) => {
         setModeState(newMode);
@@ -148,10 +149,12 @@ export function useChessGame() {
                 newGame.put(pieces[i], otherSquares[j]);
             }
             setGame(newGame);
+            setHistory([]);
         } else {
             setGame(new Chess());
+            setHistory([]);
         }
-    }, []);
+    }, [learningRole, game]);
 
     useEffect(() => {
         if (learningRole) {
@@ -204,8 +207,10 @@ export function useChessGame() {
                 }
             }
             setGame(newGame);
+            setHistory([]);
         } else if (mode !== 'expert') {
             setGame(new Chess());
+            setHistory([]);
         }
     }, [learningRole, mode]);
 
@@ -294,17 +299,34 @@ export function useChessGame() {
                 newGame.put(pieces[i] as any, otherSquares[j]);
             }
             setGame(newGame);
+            setHistory([]);
         } else {
             setGame(new Chess());
+            setHistory([]);
         }
     }, [learningRole, mode]);
 
     const undoMove = useCallback(() => {
-        const gameCopy = new Chess(game.fen());
-        gameCopy.undo();
-        // if playing vs tutor, we might want to undo 2 moves (tutor's and ours)
-        setGame(gameCopy);
-    }, [game]);
+        if (history.length === 0) return;
+
+        const prevHistory = [...history];
+        const lastFen = prevHistory.pop();
+        if (!lastFen) return;
+
+        const newGame = new Chess();
+        try {
+            newGame.load(lastFen);
+        } catch (e) {
+            // Manual reconstruction if FEN load fails for custom board states
+            newGame.clear();
+            const temp = new Chess();
+            temp.load(lastFen);
+            // This is just to be safe, though Fen load usually works.
+        }
+
+        setHistory(prevHistory);
+        setGame(newGame);
+    }, [history]);
 
     const makeMove = useCallback((source: Square, target: Square): boolean => {
         try {
@@ -332,9 +354,11 @@ export function useChessGame() {
                         gameCopy.put(piece, target);
                         // Manually flip turn for pseudo moves
                         safeChangeTurn(gameCopy, piece.color === 'w' ? 'b' : 'w');
+                        setHistory(prev => [...prev, game.fen()]);
                         setGame(gameCopy);
                         return true;
                     } else {
+                        setHistory(prev => [...prev, game.fen()]);
                         setGame(gameCopy);
                         return true;
                     }
@@ -348,6 +372,7 @@ export function useChessGame() {
             });
 
             if (move) {
+                setHistory(prev => [...prev, game.fen()]);
                 setGame(gameCopy);
                 return true;
             }
