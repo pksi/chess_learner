@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import './index.css';
 import { SidebarLeft } from './components/SidebarLeft';
 import { SidebarRight } from './components/SidebarRight';
@@ -10,7 +10,6 @@ function App() {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [warningMessage, setWarningMessage] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [tutorVisible, setTutorVisible] = useState(true);
 
   const toggleFullscreen = () => {
     const elem = document.getElementById('board-container');
@@ -28,13 +27,13 @@ function App() {
   };
 
   // Sync state if user exits via Esc key
-  useEffect(() => {
+  useState(() => {
     const handleFsChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
     };
     document.addEventListener('fullscreenchange', handleFsChange);
     return () => document.removeEventListener('fullscreenchange', handleFsChange);
-  }, []);
+  });
 
   const getTutorMessage = () => {
     if (warningMessage) {
@@ -122,33 +121,7 @@ function App() {
         </div>
       </div>
 
-      {/* Tutor panel with animated slide + toggle tab */}
-      <div className={`tutor-wrapper ${tutorVisible ? 'tutor-visible' : 'tutor-hidden'}`}>
-        <button
-          className="tutor-toggle-btn"
-          onClick={() => setTutorVisible(v => !v)}
-          title={tutorVisible ? "Hide Tutor Analysis" : "Show Tutor Analysis"}
-        >
-          {tutorVisible ? (
-            /* chevron-right to collapse */
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
-          ) : (
-            /* chevron-left to expand */
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-          )}
-          <span className="tutor-toggle-label">
-            {tutorVisible ? 'Hide Tutor' : 'Show Tutor'}
-          </span>
-        </button>
-
-        <div className="tutor-panel-inner">
-          <SidebarRight message={getTutorMessage()} />
-        </div>
-      </div>
+      <SidebarRight message={getTutorMessage()} />
     </div>
   );
 }
