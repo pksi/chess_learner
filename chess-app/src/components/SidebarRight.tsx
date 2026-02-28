@@ -9,22 +9,37 @@ export const SidebarRight: React.FC<SidebarRightProps> = ({ message }) => {
     const [isVisible, setIsVisible] = useState(true);
 
     return (
-        <div className="sidebar-right" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        <div className="sidebar-right" style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.75rem',
+            width: isVisible ? '280px' : '60px',
+            transition: 'width 0.3s ease',
+            overflow: isVisible ? 'visible' : 'hidden'
+        }}>
 
             {/* Always-visible header card — this NEVER hides */}
             <div className="panel" style={{ padding: '0.9rem 1.2rem', flexShrink: 0, gap: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <h2 style={{ color: 'white', marginBottom: 0, fontSize: '1rem' }}>
-                        <Bot size={16} color="var(--accent-purple)" /> Tutor Analysis
-                    </h2>
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: isVisible ? 'space-between' : 'center',
+                    minWidth: 0
+                }}>
+                    {isVisible && (
+                        <h2 style={{ color: 'white', marginBottom: 0, fontSize: '1rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            <Bot size={16} color="var(--accent-purple)" /> Tutor Analysis
+                        </h2>
+                    )}
                     <button
                         className={`tutor-toggle-btn${isVisible ? '' : ' collapsed'}`}
                         onClick={() => setIsVisible(v => !v)}
                         title={isVisible ? 'Hide Tutor Analysis' : 'Show Tutor Analysis'}
+                        style={{ padding: isVisible ? '0.35rem 0.75rem' : '0.5rem' }}
                     >
                         {isVisible
                             ? <><ChevronUp size={13} /> Hide</>
-                            : <><ChevronDown size={13} /> Show</>
+                            : <ChevronDown size={20} />
                         }
                     </button>
                 </div>
