@@ -15,7 +15,7 @@ export const SidebarRight: React.FC<SidebarRightProps> = ({ message }) => {
             gap: '0.75rem',
             width: isVisible ? '280px' : '60px',
             transition: 'width 0.3s ease',
-            overflow: isVisible ? 'visible' : 'hidden'
+            overflow: isVisible ? 'visible' : 'visible'
         }}>
 
             {/* Always-visible header card — this NEVER hides */}
