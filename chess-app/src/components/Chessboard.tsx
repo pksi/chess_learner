@@ -8,6 +8,7 @@ interface ChessboardProps {
     soundEnabled: boolean;
     onInvalidMove: (message?: string) => void;
     showHints?: boolean;
+    isAiThinking?: boolean;
 }
 
 const ranks = [8, 7, 6, 5, 4, 3, 2, 1];
@@ -70,17 +71,25 @@ const playErrorSound = () => {
     } catch (e) { }
 };
 
-export const Chessboard: React.FC<ChessboardProps> = ({ game, onMakeMove, soundEnabled, onInvalidMove, showHints = true }) => {
+export const Chessboard: React.FC<ChessboardProps> = ({ game, onMakeMove, soundEnabled, onInvalidMove, showHints = true, isAiThinking = false }) => {
     const [selectedSquare, setSelectedSquare] = useState<Square | null>(null);
     const [validMoves, setValidMoves] = useState<Square[]>([]);
 
-    // Update whenever game state changes
+    // Update whenever game state changes & play move sound
     useEffect(() => {
         setSelectedSquare(null);
         setValidMoves([]);
+        if (soundEnabled && game.history().length > 0) {
+            playSound();
+        }
     }, [game.fen()]);
 
     const handleSquareClick = (square: Square) => {
+        if (isAiThinking) {
+            onInvalidMove("Machine is thinking... Please wait.");
+            return;
+        }
+
         // If we click the already selected square, unselect it
         if (selectedSquare === square) {
             setSelectedSquare(null);
@@ -90,34 +99,28 @@ export const Chessboard: React.FC<ChessboardProps> = ({ game, onMakeMove, soundE
 
         const piece = game.get(square);
 
-        // Helper to get moves for ANY piece, overriding turn if necessary
-
         // If we have a selected square, try to move there
         if (selectedSquare) {
             const isMoveValid = validMoves.includes(square);
             if (isMoveValid) {
                 const success = onMakeMove(selectedSquare, square);
                 if (success) {
-                    if (soundEnabled) playSound();
+                    // Sound played via useEffect FEN change
                 } else {
                     onInvalidMove();
                     if (soundEnabled) playErrorSound();
                 }
             } else {
-                // Did we click another piece? Let's just select it instead of showing error,
-                // treating it as changing selection (if it's our turn piece).
                 if (piece) {
                     if (piece.color === game.turn()) {
                         setSelectedSquare(square);
                         setValidMoves(getPseudoLegalMoves(game, square));
                     } else {
-                        // Selection of opponent piece is not allowed for moving
                         onInvalidMove(`It's ${game.turn() === 'w' ? "white" : "black"}'s turn, please wait for your turn.`);
                         setSelectedSquare(null);
                         setValidMoves([]);
                     }
                 } else {
-                    // Invalid move area clicked
                     onInvalidMove();
                     if (soundEnabled) playErrorSound();
                     setSelectedSquare(null);
@@ -149,7 +152,8 @@ export const Chessboard: React.FC<ChessboardProps> = ({ game, onMakeMove, soundE
             border: '4px solid var(--panel-bg)',
             borderRadius: '8px',
             overflow: 'hidden',
-            boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
+            boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+            position: 'relative'
         }}>
             {ranks.map((rank, i) =>
                 files.map((file, j) => {
@@ -177,7 +181,7 @@ export const Chessboard: React.FC<ChessboardProps> = ({ game, onMakeMove, soundE
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 position: 'relative',
-                                cursor: 'pointer',
+                                cursor: isAiThinking ? 'wait' : 'pointer',
                                 userSelect: 'none',
                                 transition: 'background-color 0.2s',
                             }}
@@ -212,6 +216,38 @@ export const Chessboard: React.FC<ChessboardProps> = ({ game, onMakeMove, soundE
                     );
                 })
             )}
+
+            {/* AI thinking visual overlay indicator */}
+            {isAiThinking && (
+                <div style={{
+                    position: 'absolute',
+                    top: 12,
+                    right: 12,
+                    backgroundColor: 'rgba(15, 23, 42, 0.85)',
+                    color: '#93C5FD',
+                    padding: '0.4rem 0.8rem',
+                    borderRadius: '20px',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    backdropFilter: 'blur(4px)',
+                    border: '1px solid rgba(147, 197, 253, 0.3)',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    zIndex: 10
+                }}>
+                    <span style={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: '50%',
+                        backgroundColor: '#3B82F6',
+                        animation: 'pulse 1s infinite alternate'
+                    }} />
+                    Machine is thinking...
+                </div>
+            )}
         </div>
     );
 };
+

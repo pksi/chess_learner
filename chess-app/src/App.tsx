@@ -6,7 +6,7 @@ import { Chessboard } from './components/Chessboard';
 import { useChessGame } from './hooks/useChessGame';
 
 function App() {
-  const { game, mode, setMode, learningRole, setLearningRole, resetGame, undoMove, makeMove } = useChessGame();
+  const { game, mode, setMode, learningRole, setLearningRole, resetGame, undoMove, makeMove, isAiThinking } = useChessGame();
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [warningMessage, setWarningMessage] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -39,10 +39,32 @@ function App() {
     if (warningMessage) {
       return `<strong style="color: var(--danger)">Warning:</strong> ${warningMessage}`;
     }
+
+    if (game.isCheckmate()) {
+      const winner = game.turn() === 'w' ? 'Black (Machine)' : 'White (You)';
+      return `<strong style="color: var(--accent-purple)">Checkmate!</strong> Winner: <strong>${winner}</strong>. Press <em>Reset Board</em> to play again.`;
+    }
+
+    if (game.isDraw() || game.isStalemate()) {
+      return `<strong style="color: #F59E0B">Draw!</strong> The game ended in a draw. Press <em>Reset Board</em> to start a new match.`;
+    }
+
+    if (mode.startsWith('ai-')) {
+      const levelName = mode === 'ai-easy' ? 'Easy' : mode === 'ai-medium' ? 'Medium' : 'Hard';
+      if (isAiThinking) {
+        return `🤖 Machine (<strong>${levelName} AI</strong>) is thinking...`;
+      }
+      if (game.turn() === 'w') {
+        return `It's your turn (<strong>White</strong>)! Play against <strong>${levelName} Machine AI</strong>.`;
+      } else {
+        return `Machine's turn (<strong>Black</strong>). Calculating move...`;
+      }
+    }
+
     if (learningRole) {
       return `You are now learning how the <strong>${learningRole}</strong> moves! Click on any ${learningRole.toLowerCase()} to see its valid moves.`;
     }
-    return `Hello! I'm your chess tutor. You can <strong>Play</strong> a full game or check the <strong>Learn</strong> section to practice specific pieces like the Pawn.`;
+    return `Hello! I'm your chess tutor. You can play against <strong>Easy, Medium, or Hard Machine AI</strong>, or practice specific pieces in the <strong>Learn Roles</strong> section.`;
   };
 
   const handleInvalidMove = (message?: string) => {
@@ -50,6 +72,13 @@ function App() {
     setTimeout(() => {
       setWarningMessage(null);
     }, 3000);
+  };
+
+  const getOpponentLabel = () => {
+    if (mode === 'ai-easy') return 'Black (Machine - Easy)';
+    if (mode === 'ai-medium') return 'Black (Machine - Medium)';
+    if (mode === 'ai-hard') return 'Black (Machine - Hard)';
+    return 'Black (Tutor)';
   };
 
   return (
@@ -78,7 +107,8 @@ function App() {
             onMakeMove={makeMove}
             soundEnabled={soundEnabled}
             onInvalidMove={handleInvalidMove}
-            showHints={mode === 'beginner'}
+            showHints={mode === 'beginner' || mode === 'ai-easy'}
+            isAiThinking={isAiThinking}
           />
           <div style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', maxWidth: '800px', fontSize: '0.9rem' }}>
             <div style={{ display: 'flex', gap: '1rem' }}>
@@ -86,7 +116,7 @@ function App() {
                 <div style={{ width: 12, height: 12, backgroundColor: 'white', borderRadius: 2 }} /> White (You)
               </span>
               <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)' }}>
-                <div style={{ width: 12, height: 12, backgroundColor: 'var(--panel-bg)', borderRadius: 2 }} /> Black (Tutor)
+                <div style={{ width: 12, height: 12, backgroundColor: 'var(--panel-bg)', borderRadius: 2 }} /> {getOpponentLabel()}
               </span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>

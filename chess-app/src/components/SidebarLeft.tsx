@@ -1,9 +1,10 @@
 import React from 'react';
-import { Trophy, BookOpen, Layers, Undo, RotateCcw } from 'lucide-react';
+import { Trophy, BookOpen, Layers, Undo, RotateCcw, Bot } from 'lucide-react';
+import type { GameMode } from '../hooks/useChessGame';
 
 interface SidebarLeftProps {
-    mode: 'beginner' | 'intermediate' | 'expert';
-    setMode: (mode: 'beginner' | 'intermediate' | 'expert') => void;
+    mode: GameMode;
+    setMode: (mode: GameMode) => void;
     learningRole: string | null;
     setLearningRole: (role: string | null) => void;
     onUndo: () => void;
@@ -12,6 +13,12 @@ interface SidebarLeftProps {
 
 const roles = ['Pawn', 'Knight', 'Bishop', 'Rook', 'Queen', 'King'];
 
+const aiLevels: { id: GameMode; label: string; tag: string; color: string }[] = [
+    { id: 'ai-easy', label: 'Easy Level AI', tag: 'Easy', color: '#10B981' },
+    { id: 'ai-medium', label: 'Medium Level AI', tag: 'Medium', color: '#F59E0B' },
+    { id: 'ai-hard', label: 'Hard Level AI', tag: 'Hard', color: '#EF4444' },
+];
+
 export const SidebarLeft: React.FC<SidebarLeftProps> = ({
     mode, setMode, learningRole, setLearningRole, onUndo, onReset
 }) => {
@@ -19,23 +26,60 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
         <div className="sidebar-left">
             <div className="panel" style={{ border: '1px solid var(--accent-purple)' }}>
                 <h2 style={{ color: 'white' }}>
-                    <Trophy size={18} color="var(--accent-purple)" /> Play Mode
+                    <Bot size={18} color="var(--accent-purple)" /> User vs Machine
                 </h2>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {['Beginner', 'Intermediate', 'Expert'].map((m) => (
-                        <button
-                            key={m}
-                            className={`btn ${mode === m.toLowerCase() ? 'active' : ''}`}
-                            onClick={() => {
-                                setMode(m.toLowerCase() as any);
-                                setLearningRole(null);
-                            }}
-                            style={{ justifyContent: 'space-between' }}
-                        >
-                            {m}
-                            {mode === m.toLowerCase() && <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: 'white' }} />}
-                        </button>
-                    ))}
+                    {aiLevels.map((ai) => {
+                        const isActive = mode === ai.id && !learningRole;
+                        return (
+                            <button
+                                key={ai.id}
+                                className={`btn ${isActive ? 'active' : ''}`}
+                                onClick={() => {
+                                    setMode(ai.id);
+                                    setLearningRole(null);
+                                }}
+                                style={{ justifyContent: 'space-between' }}
+                            >
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <span style={{
+                                        width: 8,
+                                        height: 8,
+                                        borderRadius: '50%',
+                                        backgroundColor: ai.color
+                                    }} />
+                                    {ai.label}
+                                </span>
+                                {isActive && <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: 'white' }} />}
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+
+            <div className="panel">
+                <h2 style={{ color: 'white' }}>
+                    <Trophy size={18} color="var(--text-muted)" /> Practice Modes
+                </h2>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {['Beginner', 'Intermediate', 'Expert'].map((m) => {
+                        const modeId = m.toLowerCase() as GameMode;
+                        const isActive = mode === modeId && !learningRole;
+                        return (
+                            <button
+                                key={m}
+                                className={`btn ${isActive ? 'active' : ''}`}
+                                onClick={() => {
+                                    setMode(modeId);
+                                    setLearningRole(null);
+                                }}
+                                style={{ justifyContent: 'space-between' }}
+                            >
+                                {m}
+                                {isActive && <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: 'white' }} />}
+                            </button>
+                        );
+                    })}
                 </div>
             </div>
 
@@ -73,3 +117,4 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
         </div>
     );
 };
+

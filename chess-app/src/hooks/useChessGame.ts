@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Chess, type Square } from 'chess.js';
+import { getBestAiMove, type AiLevel } from '../utils/chessAi';
 
-export type GameMode = 'beginner' | 'intermediate' | 'expert';
+export type GameMode = 'beginner' | 'intermediate' | 'expert' | 'ai-easy' | 'ai-medium' | 'ai-hard';
 
 export const safeClone = (game: Chess) => {
     const clone = new Chess();
@@ -133,9 +134,11 @@ export function useChessGame() {
     const [mode, setModeState] = useState<GameMode>('beginner');
     const [learningRole, setLearningRole] = useState<string | null>(null);
     const [history, setHistory] = useState<string[]>([]);
+    const [isAiThinking, setIsAiThinking] = useState(false);
 
     const setMode = useCallback((newMode: GameMode) => {
         setModeState(newMode);
+        setIsAiThinking(false);
         if (newMode === 'expert') {
             const newGame = new Chess();
             newGame.clear();
@@ -180,6 +183,34 @@ export function useChessGame() {
             setHistory([]);
         }
     }, [learningRole, game]);
+
+    // Handle Machine AI moves when playing in an AI mode and it's Black's turn
+    useEffect(() => {
+        if (!mode.startsWith('ai-') || game.turn() !== 'b' || game.isGameOver() || isAiThinking || learningRole) {
+            return;
+        }
+
+        const aiLevel = mode.replace('ai-', '') as AiLevel;
+        setIsAiThinking(true);
+
+        const timer = setTimeout(() => {
+            try {
+                const aiMove = getBestAiMove(game, aiLevel);
+                if (aiMove) {
+                    const gameCopy = safeClone(game);
+                    gameCopy.move(aiMove);
+                    setHistory(prev => [...prev, game.fen()]);
+                    setGame(gameCopy);
+                }
+            } catch (err) {
+                console.error("AI move calculation error:", err);
+            } finally {
+                setIsAiThinking(false);
+            }
+        }, 400);
+
+        return () => clearTimeout(timer);
+    }, [game, mode, isAiThinking, learningRole]);
 
     useEffect(() => {
         if (learningRole) {
@@ -233,13 +264,16 @@ export function useChessGame() {
             }
             setGame(newGame);
             setHistory([]);
+            setIsAiThinking(false);
         } else if (mode !== 'expert') {
             setGame(new Chess());
             setHistory([]);
+            setIsAiThinking(false);
         }
     }, [learningRole, mode]);
 
     const resetGame = useCallback(() => {
+        setIsAiThinking(false);
         if (learningRole === 'Pawn') {
             const newGame = new Chess();
             newGame.clear();
@@ -334,9 +368,23 @@ export function useChessGame() {
     }, [learningRole, mode]);
 
     const undoMove = useCallback(() => {
-        if (history.length === 0) return;
+        if (history.length === 0 || isAiThinking) return;
 
+        const isAiMode = mode.startsWith('ai-');
         const prevHistory = [...history];
+
+        if (isAiMode && prevHistory.length >= 2) {
+            prevHistory.pop(); // Pop Machine's move
+            const targetFen = prevHistory.pop(); // Pop User's move
+            if (targetFen) {
+                const newGame = new Chess();
+                loadFENIntoGame(newGame, targetFen);
+                setHistory(prevHistory);
+                setGame(newGame);
+                return;
+            }
+        }
+
         const lastFen = prevHistory.pop();
         if (!lastFen) return;
 
@@ -345,9 +393,11 @@ export function useChessGame() {
 
         setHistory(prevHistory);
         setGame(newGame);
-    }, [history]);
+    }, [history, isAiThinking, mode]);
 
     const makeMove = useCallback((source: Square, target: Square): boolean => {
+        if (isAiThinking) return false;
+
         try {
             const gameCopy = safeClone(game);
             const piece = gameCopy.get(source);
@@ -358,20 +408,21 @@ export function useChessGame() {
                     return false;
                 }
 
+                // In AI mode, User can only move White pieces
+                if (mode.startsWith('ai-') && piece.color !== 'w') {
+                    return false;
+                }
+
                 // Extra check removal if we are in expert mode or learning a specific role
-                // This ensures movement stays fluid even in legally "wacky" board states.
                 if (mode === 'expert' || learningRole) {
-                    // Try to move normally. If it fails, force the move since it's just practicing movement.
                     let move = null;
                     try {
                         move = gameCopy.move({ from: source, to: target, promotion: 'q' });
                     } catch (err) { }
 
                     if (!move) {
-                        // Pseudo-legal bypass
                         gameCopy.remove(source);
                         gameCopy.put(piece, target);
-                        // Manually flip turn for pseudo moves
                         safeChangeTurn(gameCopy, piece.color === 'w' ? 'b' : 'w');
                         setHistory(prev => [...prev, game.fen()]);
                         setGame(gameCopy);
@@ -399,7 +450,7 @@ export function useChessGame() {
             return false;
         }
         return false;
-    }, [game, mode, learningRole]);
+    }, [game, mode, learningRole, isAiThinking]);
 
     return {
         game,
@@ -410,6 +461,7 @@ export function useChessGame() {
         setLearningRole,
         resetGame,
         undoMove,
-        makeMove
+        makeMove,
+        isAiThinking
     };
 }
