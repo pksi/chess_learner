@@ -186,7 +186,7 @@ export function useChessGame() {
 
     // Handle Machine AI moves when playing in an AI mode and it's Black's turn
     useEffect(() => {
-        if (!mode.startsWith('ai-') || game.turn() !== 'b' || game.isGameOver() || isAiThinking || learningRole) {
+        if (!mode.startsWith('ai-') || game.turn() !== 'b' || game.isGameOver() || learningRole) {
             return;
         }
 
@@ -194,23 +194,26 @@ export function useChessGame() {
         setIsAiThinking(true);
 
         const timer = setTimeout(() => {
-            try {
-                const aiMove = getBestAiMove(game, aiLevel);
-                if (aiMove) {
-                    const gameCopy = safeClone(game);
-                    gameCopy.move(aiMove);
-                    setHistory(prev => [...prev, game.fen()]);
-                    setGame(gameCopy);
+            // Nested setTimeout to ensure React updates UI to "thinking" state before running search
+            setTimeout(() => {
+                try {
+                    const aiMove = getBestAiMove(game, aiLevel);
+                    if (aiMove) {
+                        const gameCopy = safeClone(game);
+                        gameCopy.move(aiMove);
+                        setHistory(prev => [...prev, game.fen()]);
+                        setGame(gameCopy);
+                    }
+                } catch (err) {
+                    console.error("AI move calculation error:", err);
+                } finally {
+                    setIsAiThinking(false);
                 }
-            } catch (err) {
-                console.error("AI move calculation error:", err);
-            } finally {
-                setIsAiThinking(false);
-            }
-        }, 400);
+            }, 50);
+        }, 200);
 
         return () => clearTimeout(timer);
-    }, [game, mode, isAiThinking, learningRole]);
+    }, [game.fen(), mode, learningRole]);
 
     useEffect(() => {
         if (learningRole) {
